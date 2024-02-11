@@ -5,6 +5,7 @@ import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
 import createReport from 'docx-templates'
 import sizeOf from 'image-size'
+import htmlToDocx from "html-docx-js";
 
 
 export default class DocxLib {
@@ -44,6 +45,10 @@ export default class DocxLib {
         doc.render(data)
         const buf = doc.getZip().generate({ type: 'nodebuffer' }) as Buffer
         return buf
+    }
+    static async HtmlToDocx(content: string, savePath?: string): Promise<Buffer> {
+        const docxBuffer = await htmlToDocx.asBlob(content) as Buffer;
+        return docxBuffer
     }
     static DocxToPdf(file: string | Buffer, savePath?: string): Promise<Buffer> {
         return new Promise(async (resolve, reject) => {

@@ -1,12 +1,11 @@
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { config } from '../config'
-import { Configuration, OpenAIApi } from "openai";
+import { randomUUID } from "crypto";
+import { OpenAIResponseLogEntity } from "../domain/entities";
+import { OpenAIResponseLog } from "../models/OpenAIResponseLog";
 
-const { openAIApiKey } = config
-const configuration = new Configuration({
-  apiKey: openAIApiKey,
-});
-export const openai = new OpenAIApi(configuration);
+const { apiKey, model, maxPrompt } = config.openAI
+
 const chatCompletionExampleResponse = {
   "id": "chatcmpl-7LrvNc9NTLi9C7tmhrbEgt1SiuL9z",
   "object": "chat.completion",
@@ -28,23 +27,95 @@ const chatCompletionExampleResponse = {
     }
   ]
 }
-export type chatCompletion=typeof chatCompletionExampleResponse
+export type chatCompletion = typeof chatCompletionExampleResponse
+export type message = { role: "user" | "system", content: string }
 export class OpenAIService {
-  static async ChatCompletion(prompt: string, model: string): Promise<chatCompletion> {
+  static async SaveLogToDataBase(messages: message[], completion: chatCompletion, user?: string): Promise<OpenAIResponseLog> {
+    const systemPrompt = messages.find(m => m.role == 'system')?.content
+    const userPrompt = messages.find(m => m.role == 'user')?.content
+    const data: OpenAIResponseLogEntity = {
+      id: completion.id,
+      user: user,
+      object: completion.object,
+      created: new Date(completion.created),
+      model: completion.model,
+      prompt_tokens: completion.usage.prompt_tokens,
+      completion_tokens: completion.usage.completion_tokens,
+      total_tokens: completion.usage.total_tokens,
+      role: completion.choices[0].message.role,
+      systemPrompt,
+      userPrompt,
+      content: completion.choices[0].message.content,
+      finish_reason: completion.choices[0].finish_reason,
+      index: completion.choices[0].index,
+    }
+    return await OpenAIResponseLog.create(data as any)
+  }
+  static async MultiChatCompletion(multiMessages: message[][], user?: string): Promise<chatCompletion[]> {
     try {
       const apiUrl = 'https://api.openai.com/v1/chat/completions';
+      if (!user)
+        user = randomUUID()
+      let completions: chatCompletion[] = []
+      for (const messages of multiMessages) {
+        const response = await axios.post(apiUrl, {
+          user,
+          model,
+          messages,
+          temperature: 0
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          }
+        })
+        const completion = response.data as chatCompletion
+        await this.SaveLogToDataBase(messages, completion, user)
+        completions.push(completion)
+      }
+      return completions
+
+    } catch (error: any) {
+      if (error.response?.data) {
+        console.error(error.response.status, error.response.data);
+        throw error.response.data
+      } else {
+        console.error(`Error with OpenAI API request: ${error.message}`);
+        throw error.message
+      }
+    }
+  }
+  static async ChatCompletion(messages: message[], user: string = "", json: boolean = false): Promise<chatCompletion> {
+    try {
+      if (!user)
+        user = randomUUID()
+      const apiUrl = 'https://api.openai.com/v1/chat/completions';
       const response = await axios.post(apiUrl, {
+        user,
         model,
-        messages: [{ role: 'system', content: prompt }],
+        ...(json ? { "response_format": { "type": "json_object" } } : {}),
+        messages,
         temperature: 0
       }, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAIApiKey}`
+          'Authorization': `Bearer ${apiKey}`
         }
       })
-      console.log(response.data.choices[0].message.content);
-      return response.data
+      const completion = response.data as chatCompletion
+      await this.SaveLogToDataBase(messages, completion, user)
+      if (json) {
+        const jsonString = completion.choices[0].message.content
+        try {
+          JSON.parse(jsonString)
+        } catch (error) {
+          console.error("AI OUTPUT IS NOT JSON");
+          console.error(messages);
+          console.error(jsonString);
+          throw error
+        }
+      }
+      return completion
 
     } catch (error: any) {
       if (error.response?.data) {

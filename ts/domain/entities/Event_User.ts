@@ -1,5 +1,4 @@
-import { IEvent } from "./IEvent";
-export interface IEvent_User {
+export interface Event_UserEntity {
 	id?: number;
 	createdAt?: Date;
 	updatedAt?: Date;

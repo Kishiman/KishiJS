@@ -1,17 +1,17 @@
-import { config } from "../config";
 
 import { FindOptions, WhereAttributeHash } from "sequelize/types";
-import { Router, RequestHandler } from "express";
+import { Router } from "express";
 import bodyParser from "body-parser";
 import _ from "lodash";
 
-import { CrudOptions, CrudResponse, KOp, KishiDataType, KishiModel } from "../sequelize";
+import { CrudOptions, KOp, KishiDataType, KishiModel } from "../sequelize";
 import { flatToDeep, setDeepValue } from "../utils/object";
 import { KArray } from "../utils/array";
-import { Middleware, MiddlewareChain, MiddlewareRequest } from "../utils/middleware";
+import { Middleware, MiddlewareChain } from "../utils/middleware";
 import { UserAuthService } from "../services/userAuth";
-import { User, ExternalToken } from "../models";
-import { IUser } from "../interfaces";
+import { UserEntity } from "../domain/entities";
+import { User } from "../models/User";
+import { schemas } from "../domain/schemas";
 
 export let router = Router();
 router.use(bodyParser.urlencoded({ extended: false }));
@@ -29,7 +29,7 @@ export class ModelRouter {
   }
   verifyCrud = (crud: keyof CrudOptions): Middleware => {
     return async (req, res) => {
-      const user: (User & IUser) | null = req.middleData.user
+      const user: (User & UserEntity) | null = req.middleData.user
       const crudOption = this.Model.crudOptions[crud] || false
       let crudResponse
       if (typeof crudOption == "function") {
@@ -47,6 +47,9 @@ export class ModelRouter {
     const crudResponse: true | WhereAttributeHash = req.middleData.crudResponse
     const schema: string = (req.query["schema"] || "pure") as string
     let findOptions: FindOptions = this.Model.SchemaToFindOptions(schema, true)
+    if (schemas[this.Model.name]?.[schema]) {
+      findOptions = this.Model.PathsToFindOptions(schemas[this.Model.name][schema])
+    }
     const page: string = req.query["page"] as string;
     if (page) {
       const limit = Number(page.split(":")[0])
@@ -61,6 +64,7 @@ export class ModelRouter {
       const [name, order] = orderBy.split(":")
       findOptions.order = [[name, order]]
     } else {
+      findOptions.order = [["id", "DESC"]]
     }
     const where = req.body?.where
     if (where) {
@@ -125,6 +129,7 @@ export class ModelRouter {
     const row = await this.Model.findOne(findOptions)
     return { row: row?.toView() }
   }
+
   uploadFile: (attributeName: string) => Middleware = (attributeName: string) => {
     return async (req, res) => {
       const fileType = this.Model.rawAttributes[attributeName].type as KishiDataType
@@ -177,11 +182,98 @@ export class ModelRouter {
     const rows = await this.Model.findAll(findOptions)
     return { rows: this.Model.toView(rows) }
   }
+  create: Middleware = async (req, res) => {
+    const Model = this.Model
+    let user = req.middleData.user as UserEntity
+    let data = Model.fromView(req.middleData.reqData) as any
+    let created: KishiModel | null = null
+    for (const attributeName in req.files) {
+      const fileType = this.Model.rawAttributes[attributeName].type as KishiDataType
+      if (!fileType?.isFile) continue
+      data[attributeName] = req.files[attributeName]
+    }
+    if (Model.parentOptions) {
+      const type = data[Model.parentOptions.descriminator] as string
+      if (!Model.parentOptions.models.includes(type))
+        throw `Unvalid Child Type ${type}`
+      const ChildModel = Model.models[type]
+      created = await ChildModel.Create(data, { user } as any) as KishiModel
+    } else {
+      created = await Model.Create(data, { user } as any) as KishiModel
+    }
+    const schema: string = (req.query["schema"] || "pure") as string
+    let findOptions = Model.SchemaToFindOptions(schema, true)
+    if (schemas[this.Model.name]?.[schema]) {
+      findOptions = this.Model.PathsToFindOptions(schemas[this.Model.name][schema])
+    }
+    const row = await Model.findByPk(created.id, findOptions)
+    if (!row)
+      throw { message: `Create Failed` }
+    return { row: row.toView() }
+  }
+  update: Middleware = async (req, res) => {
+    const Model = this.Model
+    let user = req.middleData.user as UserEntity
+    const id: string = req.query["id"] as string
+    const crudResponse: true | WhereAttributeHash = req.middleData.crudResponse
+    const toUpdate = crudResponse != true ? await Model.findOne({ where: { [KOp("and")]: [{ id }, crudResponse] } }) : await Model.findByPk(id)
+    if (!toUpdate)
+      throw { message: `Instance Not Found` }
+    let data = Model.fromView(req.middleData.reqData) as any
+    for (const attributeName in req.files) {
+      const fileType = this.Model.rawAttributes[attributeName].type as KishiDataType
+      if (!fileType?.isFile) continue
+      data[attributeName] = req.files[attributeName]
+    }
+    await toUpdate.Update(data, { user } as any)
+    const schema: string = (req.query["schema"] || "pure") as string
+    let findOptions = Model.SchemaToFindOptions(schema, true)
+    if (schemas[this.Model.name]?.[schema]) {
+      findOptions = this.Model.PathsToFindOptions(schemas[this.Model.name][schema])
+    }
+    const row = await Model.findByPk(toUpdate.id, findOptions)
+    if (!row)
+      throw { message: `Update Failed` }
+    return { row: row.toView() }
+  }
+  upsert: Middleware = async (req, res) => {
+    const Model = this.Model
+    let user = req.middleData.user as UserEntity
+    let data = Model.fromView(req.middleData.reqData) as any
+    for (const attributeName in req.files) {
+      const fileType = this.Model.rawAttributes[attributeName].type as KishiDataType
+      if (!fileType?.isFile) continue
+      data[attributeName] = req.files[attributeName]
+    }
+    const [upserted, newRecord] = await Model.Upsert(data, { user } as any)
+    const schema: string = (req.query["schema"] || "pure") as string
+    let findOptions = Model.SchemaToFindOptions(schema, true)
+    if (schemas[this.Model.name]?.[schema]) {
+      findOptions = this.Model.PathsToFindOptions(schemas[this.Model.name][schema])
+    }
+    const row = await Model.findByPk(upserted.id, findOptions)
+    if (!row)
+      throw { message: `Upsert Failed` }
+    return { newRecord, row: row.toView(), }
+  }
+  destroy: Middleware = async (req, res) => {
+    const Model = this.Model
+    let user = req.middleData.user as UserEntity
+    const id: string = req.query["id"] as string
+    const crudResponse: true | WhereAttributeHash = req.middleData.crudResponse
+    const toDestroy = crudResponse != true ? await Model.findOne({ where: { [KOp("and")]: [{ id }, crudResponse] } }) : await Model.findByPk(id)
+    if (!toDestroy)
+      throw { message: `Instance Not Found` }
+    await toDestroy.destroy({ user } as any)
+    return { deleted: true }
+  }
   Route(): Router {
     let router: Router = Router();
     const Model = this.Model
     const {
-      verifyUser, verifyCrud, parseReqData, parseFindOptions, findByDisplay, findById, findOneWhere, findAll, count, uploadFile, deleteFile
+      verifyUser, verifyCrud, parseReqData, parseFindOptions,
+      findByDisplay, findById, findOneWhere, findAll, count, uploadFile, deleteFile,
+      create, update, upsert, destroy
     } = this
     if (Model.WhereFromDisplay) {
       router.get("/byDisplay", MiddlewareChain(verifyUser, verifyCrud("read"), parseFindOptions, findByDisplay))
@@ -198,75 +290,6 @@ export class ModelRouter {
         router.put(`/file/${attributeName}`, MiddlewareChain(verifyUser, verifyCrud("update"), uploadFile(attributeName)))
         router.delete(`/file/${attributeName}`, MiddlewareChain(verifyUser, verifyCrud("update"), deleteFile(attributeName)))
       }
-    }
-
-    let create: Middleware = async (req, res) => {
-      let user = req.middleData.user as IUser
-      let data = Model.fromView(req.middleData.reqData) as any
-      let created: KishiModel | null = null
-      for (const attributeName in req.files) {
-        const fileType = this.Model.rawAttributes[attributeName].type as KishiDataType
-        if (!fileType?.isFile) continue
-        data[attributeName] = req.files[attributeName]
-      }
-      if (Model.parentOptions) {
-        const type = data[Model.parentOptions.descriminator] as string
-        if (!Model.parentOptions.models.includes(type))
-          throw `Unvalid Child Type ${type}`
-        const ChildModel = Model.models[type]
-        created = await ChildModel.Create(data, { user } as any) as KishiModel
-      } else {
-        created = await Model.Create(data, { user } as any) as KishiModel
-      }
-      const schema: string = (req.query["schema"] || "pure") as string
-      const findOptions = Model.SchemaToFindOptions(schema, true)
-      const row = await Model.findByPk(created.id, findOptions)
-      if (!row)
-        throw { message: `Create Failed` }
-      return { row: row.toView() }
-    }
-    let update: Middleware = async (req, res) => {
-      let user = req.middleData.user as IUser
-      const id: string = req.query["id"] as string
-      const crudResponse: true | WhereAttributeHash = req.middleData.crudResponse
-      const toUpdate = crudResponse != true ? await Model.findOne({ where: { [KOp("and")]: [{ id }, crudResponse] } }) : await Model.findByPk(id)
-      if (!toUpdate)
-        throw { message: `Instance Not Found` }
-      let data = Model.fromView(req.middleData.reqData) as any
-      for (const attributeName in req.files) {
-        const fileType = this.Model.rawAttributes[attributeName].type as KishiDataType
-        if (!fileType?.isFile) continue
-        data[attributeName] = req.files[attributeName]
-      }
-      await toUpdate.Update(data, { user } as any)
-      const schema: string = (req.query["schema"] || "pure") as string
-      const findOptions = Model.SchemaToFindOptions(schema, true)
-      const row = await Model.findByPk(toUpdate.id, findOptions)
-      if (!row)
-        throw { message: `Update Failed` }
-      return { row: row.toView() }
-    }
-    let upsert: Middleware = async (req, res) => {
-      let user = req.middleData.user as IUser
-      let data = Model.fromView(req.middleData.reqData) as any
-      const [upserted, newRecord] = await Model.Upsert(data, { user } as any)
-      const schema: string = (req.query["schema"] || "pure") as string
-      const findOptions = Model.SchemaToFindOptions(schema, true)
-      const row = await Model.findByPk(upserted.id, findOptions)
-      if (!row)
-        throw { message: `Upsert Failed` }
-      return { newRecord, row: row.toView(), }
-    }
-
-    let destroy: Middleware = async (req, res) => {
-      let user = req.middleData.user as IUser
-      const id: string = req.query["id"] as string
-      const crudResponse: true | WhereAttributeHash = req.middleData.crudResponse
-      const toDestroy = crudResponse != true ? await Model.findOne({ where: { [KOp("and")]: [{ id }, crudResponse] } }) : await Model.findByPk(id)
-      if (!toDestroy)
-        throw { message: `Instance Not Found` }
-      await toDestroy.destroy({ user } as any)
-      return { deleted: true }
     }
     router.post("/", MiddlewareChain(verifyUser, verifyCrud("create"), parseReqData, create))
     router.patch("/", MiddlewareChain(verifyUser, verifyCrud("update"), parseReqData, update))

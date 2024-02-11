@@ -1,8 +1,12 @@
 import { ModelHooks } from "sequelize/types/hooks";
 import { KishiModel, KishiModelAttributes, KishiDataTypes, KOp, typesOfKishiAssociationOptions, CrudOptions } from "../sequelize";
+
 export class User extends KishiModel {
   static crudOptions: CrudOptions = {
     "create": false,
+    "read": (user) => { return user ? true || { id: user?.id } : false },
+    "update": (user) => { return user ? { id: user?.id } : false },
+    "delete": false,
   }
 
   static WhereFromDisplay(display: string) {
@@ -80,23 +84,30 @@ export class User extends KishiModel {
       },
       through: "Notification_User",
     },
-    followers: {
-      type: "belongsToMany",
-      target: "User",
-      schemaMap: {
-        "nested": null,
-        "full": "pure",
-      },
-      actionMap: {
-        "Link": "Add",
-      },
-      otherKey: "followerId",
-      through: "UserUserFollow",
-    },
+    // followers: {
+    //   type: "belongsToMany",
+    //   target: "User",
+    //   schemaMap: {
+    //     "nested": null,
+    //     "full": "pure",
+    //   },
+    //   actionMap: {
+    //     "Link": "Add",
+    //   },
+    //   foreignKey:"followerId",
+    //   otherKey: "followerId",
+    //   through: "UserFollow",
+    // },
   };
   static initialHooks: Partial<ModelHooks<User, any>> = {
     afterSync: async (options) => {
     },
+    beforeUpdate: (instance, options) => {
+      if (options.fields?.includes("password")) {
+        instance.set("passwordChangedDate", new Date())
+        options.fields?.push("passwordChangedDate")
+      }
+    }
   }
 }
 export class UserUserFollow extends KishiModel {
@@ -113,8 +124,4 @@ export class UserUserFollow extends KishiModel {
       autoIncrement: true,
     },
   };
-  static initialHooks: Partial<ModelHooks<KishiModel, any>> = {
-    afterSync: async (options) => {
-    }
-  }
 }

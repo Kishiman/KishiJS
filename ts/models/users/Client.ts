@@ -3,7 +3,7 @@ import { User } from "../User";
 export class Client extends KishiModel {
   static crudOptions: CrudOptions = {
     "create": false,
-    "read": true,
+    "read": false,
     "update": false,
     "delete": false,
   }

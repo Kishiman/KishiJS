@@ -1,13 +1,13 @@
 import { Sequelize } from "sequelize/types";
 import { ModelHooks } from "sequelize/types/hooks";
-import { IUser } from "../interfaces";
+import { UserEntity } from "../domain/entities";
 import { KishiModel, KishiModelAttributes, KishiDataTypes, KOp, typesOfKishiAssociationOptions, CrudOptions } from "../sequelize";
 export class Event extends KishiModel {
   static crudOptions: CrudOptions = {
     "create": true,
-    "read": (user?: IUser) => { return user && { "$users.id$": user.id } || false },
-    "update": (user?: IUser) => { return user && { "$users.id$": user.id } || false },
-    "delete": (user?: IUser) => { return user && { "$users.id$": user.id } || false },
+    "read": (user?: UserEntity) => { return user && { "$users.id$": user?.id } || false },
+    "update": (user?: UserEntity) => { return user && { "$users.id$": user?.id } || false },
+    "delete": (user?: UserEntity) => { return user && { "$users.id$": user?.id } || false },
   }
   static eventTypes = ["Custom"]
   static WhereFromDisplay(display: string) {

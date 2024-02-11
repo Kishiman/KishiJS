@@ -7,7 +7,7 @@ import getClientIp from "@supercharge/request-ip";
 import { UserAuthService } from "./userAuth";
 import { FileLogger } from "../utils/fileLogger";
 
-import { INotification } from "../interfaces";
+import { NotificationEntity } from "../domain/entities";
 
 const { webPush: { vapidKeys } } = config
 
@@ -22,7 +22,7 @@ webpush.setVapidDetails(
 const logger = new FileLogger("webpush")
 
 export class WebPushService {
-    static NotifyUser(user_id: any, notification: INotification, options?: webpush.RequestOptions) {
+    static NotifyUser(user_id: any, notification: NotificationEntity, options?: webpush.RequestOptions) {
         const subs = subscriptions.User[user_id] ? Object.values(subscriptions.User[user_id]) : [];
         if (!subs || subs.length == 0) return
         const notificationPayload = {

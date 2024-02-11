@@ -1,0 +1,763 @@
+{
+	"swagger": "2.0",
+	"paths": {
+		"/user": {
+			"get": {
+				"summary": "Get all User",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/User"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"summary": "Update User by ID",
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"description": "The ID of the User",
+						"required": true,
+						"type": "string"
+					},
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The updated User object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/User"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/User"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found"
+					}
+				}
+			},
+			"put": {
+				"summary": "Create Or Update User",
+				"parameters": [
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The updated User object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/User"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/User"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found"
+					}
+				}
+			},
+			"delete": {
+				"summary": "Delete User by ID",
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"description": "The ID of the User",
+						"required": true,
+						"type": "string"
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "No Content"
+					},
+					"404": {
+						"description": "User not found"
+					}
+				}
+			}
+		},
+		"/user/all": {
+			"get": {
+				"summary": "Get all User",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"count": {
+									"type": "integer"
+								},
+								"rows": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/User"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/notification": {
+			"get": {
+				"summary": "Get all Notification",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/Notification"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/notification/all": {
+			"get": {
+				"summary": "Get all Notification",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"count": {
+									"type": "integer"
+								},
+								"rows": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/Notification"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/event": {
+			"get": {
+				"summary": "Get all Event",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/Event"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"summary": "Create a new Event",
+				"parameters": [
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The Event object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/Event"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "Created",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/Event"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"summary": "Update Event by ID",
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"description": "The ID of the Event",
+						"required": true,
+						"type": "string"
+					},
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The updated Event object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/Event"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/Event"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Event not found"
+					}
+				}
+			},
+			"put": {
+				"summary": "Create Or Update Event",
+				"parameters": [
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The updated Event object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/Event"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/Event"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Event not found"
+					}
+				}
+			},
+			"delete": {
+				"summary": "Delete Event by ID",
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"description": "The ID of the Event",
+						"required": true,
+						"type": "string"
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "No Content"
+					},
+					"404": {
+						"description": "Event not found"
+					}
+				}
+			}
+		},
+		"/event/all": {
+			"get": {
+				"summary": "Get all Event",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"count": {
+									"type": "integer"
+								},
+								"rows": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/Event"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/openairesponselog": {
+			"get": {
+				"summary": "Get all OpenAIResponseLog",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/OpenAIResponseLog"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"summary": "Create a new OpenAIResponseLog",
+				"parameters": [
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The OpenAIResponseLog object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/OpenAIResponseLog"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "Created",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/OpenAIResponseLog"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"summary": "Update OpenAIResponseLog by ID",
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"description": "The ID of the OpenAIResponseLog",
+						"required": true,
+						"type": "string"
+					},
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The updated OpenAIResponseLog object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/OpenAIResponseLog"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/OpenAIResponseLog"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "OpenAIResponseLog not found"
+					}
+				}
+			},
+			"put": {
+				"summary": "Create Or Update OpenAIResponseLog",
+				"parameters": [
+					{
+						"in": "body",
+						"name": "body",
+						"description": "The updated OpenAIResponseLog object",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/OpenAIResponseLog"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"row": {
+									"$ref": "#/definitions/OpenAIResponseLog"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "OpenAIResponseLog not found"
+					}
+				}
+			},
+			"delete": {
+				"summary": "Delete OpenAIResponseLog by ID",
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"description": "The ID of the OpenAIResponseLog",
+						"required": true,
+						"type": "string"
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "No Content"
+					},
+					"404": {
+						"description": "OpenAIResponseLog not found"
+					}
+				}
+			}
+		},
+		"/openairesponselog/all": {
+			"get": {
+				"summary": "Get all OpenAIResponseLog",
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"count": {
+									"type": "integer"
+								},
+								"rows": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/OpenAIResponseLog"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"definitions": {
+		"ExternalToken": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer"
+				},
+				"UserType": {
+					"type": "string"
+				},
+				"token": {
+					"type": "string"
+				},
+				"ip": {
+					"type": "string"
+				},
+				"expiresAt": {
+					"type": "Date"
+				},
+				"type": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				},
+				"userId": {
+					"type": "string"
+				}
+			}
+		},
+		"User": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"activated": {
+					"type": "boolean"
+				},
+				"passwordChangedDate": {
+					"type": "Date"
+				},
+				"logoutDate": {
+					"type": "Date"
+				},
+				"username": {
+					"type": "string"
+				},
+				"email": {
+					"type": "string"
+				},
+				"phoneNumber": {
+					"type": "string"
+				},
+				"firstName": {
+					"type": "string"
+				},
+				"lastName": {
+					"type": "string"
+				},
+				"dateOfBirth": {
+					"type": "Date"
+				},
+				"placeOfBirth": {
+					"type": "string"
+				},
+				"profilePhoto": {
+					"type": "{ key: string, url: string }"
+				},
+				"password": {
+					"type": "string"
+				},
+				"fullName": {
+					"type": "string"
+				},
+				"UserType": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				}
+			}
+		},
+		"Admin": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				}
+			}
+		},
+		"Client": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				}
+			}
+		},
+		"Notification": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer"
+				},
+				"type": {
+					"type": "string"
+				},
+				"message": {
+					"type": "string"
+				},
+				"ressourceName": {
+					"type": "string"
+				},
+				"ressourceId": {
+					"type": "string"
+				},
+				"triggeredBy": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				}
+			}
+		},
+		"Notification_User": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer"
+				},
+				"seenDate": {
+					"type": "Date"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				},
+				"UserId": {
+					"type": "string"
+				},
+				"NotificationId": {
+					"type": "integer"
+				}
+			}
+		},
+		"Event": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer"
+				},
+				"title": {
+					"type": "string"
+				},
+				"flag": {
+					"type": "string"
+				},
+				"startDate": {
+					"type": "Date"
+				},
+				"endDate": {
+					"type": "Date"
+				},
+				"allDay": {
+					"type": "boolean"
+				},
+				"description": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				}
+			}
+		},
+		"Event_User": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				},
+				"EventId": {
+					"type": "integer"
+				},
+				"UserId": {
+					"type": "string"
+				}
+			}
+		},
+		"OpenAIResponseLog": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"user": {
+					"type": "string"
+				},
+				"object": {
+					"type": "string"
+				},
+				"created": {
+					"type": "Date"
+				},
+				"model": {
+					"type": "string"
+				},
+				"prompt_tokens": {
+					"type": "integer"
+				},
+				"completion_tokens": {
+					"type": "integer"
+				},
+				"total_tokens": {
+					"type": "integer"
+				},
+				"role": {
+					"type": "string"
+				},
+				"systemPrompt": {
+					"type": "string"
+				},
+				"userPrompt": {
+					"type": "string"
+				},
+				"content": {
+					"type": "string"
+				},
+				"index": {
+					"type": "integer"
+				},
+				"finish_reason": {
+					"type": "string"
+				},
+				"createdAt": {
+					"type": "Date"
+				},
+				"updatedAt": {
+					"type": "Date"
+				}
+			}
+		}
+	}
+}

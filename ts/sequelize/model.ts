@@ -1,4 +1,4 @@
-import { cloneDeep, defaults, sum } from "lodash";
+import { cloneDeep, defaults } from "lodash";
 import {
   Model,
   Sequelize,
@@ -18,14 +18,37 @@ import {
   DestroyOptions,
 } from "sequelize";
 import { ModelHooks } from "sequelize/types/hooks";
-import { IUser } from "../interfaces";
+import { UserEntity } from "../domain/entities";
 import { KArray } from "../utils/array";
 import { AbstractFile } from "../utils/file";
 import { pathConcat, pathHead } from "../utils/string";
 import { KishiDataTypes } from "./DataTypes";
-import { initDataType, KishiAssociation, typesOfKishiAssociationOptions, KishiBelongsTo, KishiBelongsToMany, KishiBelongsToManyOptions, KishiBelongsToOptions, KishiDataType, KishiHasMany, KishiHasManyOptions, KishiHasOne, KishiHasOneOptions, KishiModelAttributeColumnOptions, KishiModelAttributes, KishiModelOptions, KOp, SplitAssociationPoint, CrudOptions, CrudOption, FinalAssociation, isPCIR, isPI } from "./types";
+import {
+  initDataType,
+  KishiAssociation,
+  typesOfKishiAssociationOptions,
+  KishiBelongsTo,
+  KishiBelongsToMany,
+  KishiBelongsToManyOptions,
+  KishiBelongsToOptions,
+  KishiDataType,
+  KishiHasMany,
+  KishiHasManyOptions,
+  KishiHasOne,
+  KishiHasOneOptions,
+  KishiModelAttributeColumnOptions,
+  KishiModelAttributes,
+  KishiModelOptions,
+  KOp,
+  SplitAssociationPoint,
+  CrudOptions,
+  CrudOption,
+  FinalAssociation,
+  isPCIR,
+  isPI
+} from "./types";
 
-export class KishiModel extends Model {
+export class KishiModel<TMA extends Record<string, any> = any, TCA extends Record<string, any> = TMA> extends Model<TMA, TCA> {
   static parentOptions?: {
     descriminator: string;
     models: string[];
@@ -72,7 +95,7 @@ export class KishiModel extends Model {
     const parentOptions = this.parentOptions
     if (!parentOptions) return true
     const { models, descriminator } = parentOptions
-    return async (user?: IUser) => {
+    return async (user?: UserEntity) => {
       {
         let whereList = []
         for (const modelName of models) {
@@ -166,7 +189,7 @@ export class KishiModel extends Model {
       throw `${this.name}.${association.as}:otherAssociationName(${otherAssociationName}) already exist in Target`
     }
     switch (association.type) {
-      case "belongsTo":
+      case 'belongsTo':
         let hasMany: KishiHasMany = {
           type: "hasMany",
           as: otherAssociationName,
@@ -186,8 +209,8 @@ export class KishiModel extends Model {
         Target.finalAssociations[otherAssociationName] = hasMany
         association.otherAssociation = hasMany
         break;
-      case "hasOne":
-      case "hasMany":
+      case 'hasOne':
+      case 'hasMany':
         let belongsTo: KishiBelongsTo = {
           type: "belongsTo",
           as: otherAssociationName,
@@ -207,7 +230,7 @@ export class KishiModel extends Model {
         Target.finalAssociations[otherAssociationName] = belongsTo
         association.otherAssociation = belongsTo
         break;
-      case "belongsToMany":
+      case 'belongsToMany':
         const { Through, throughSourceKey, otherKey } = association
         let belongsToMany: KishiBelongsToMany = {
           type: "belongsToMany",
@@ -407,9 +430,15 @@ export class KishiModel extends Model {
       }
       attribute = attribute as KishiModelAttributeColumnOptions
       initDataType(this, attributeName, attribute)
-      if (attribute.binder?.hardBind) {
-        attribute.fromView = false
+      const binders = Array.isArray(attribute.binder) ? attribute.binder! : [attribute.binder!].filter(b => b)
+      for (const binder of binders) {
+        if (binder.hardBind) {
+          attribute.fromView = false
+        }
       }
+      if (attribute.counter)
+        attribute.fromView = false
+
       this.initialAttributes[attributeName] = attribute;
       (attribute.type as KishiDataType)?.Init?.(this, attribute);
     }
@@ -418,7 +447,7 @@ export class KishiModel extends Model {
       ...this.initialOptions,
     });
     (this as any)._findAll = this.findAll.bind(this);
-    async function findAll(this: typeof KishiModel, options?: FindOptions | undefined): Promise<KishiModel[] | KishiModel | null> {
+    async function findAll<TMA>(this: typeof KishiModel, options?: FindOptions<TMA> | undefined): Promise<KishiModel[] | KishiModel | null> {
       options = options || {}
       let _options: FindOptions = cloneDeep(options || {})
       const { where } = _options
@@ -427,8 +456,6 @@ export class KishiModel extends Model {
       let diffPaths = KArray.minus(wherePaths, this.PathsExplicit(findPaths))
       const { attributes, include } = this.PathsToFindOptions(wherePaths)
       if (include || diffPaths.length > 0) {
-        // console.log("findAll");
-        // console.log({ where, include, wherePaths, diffPaths });
         delete _options.limit
         delete _options.offset
         delete _options.group
@@ -438,7 +465,6 @@ export class KishiModel extends Model {
         const _rows = await (this as any)._findAll(_options) as KishiModel[]
         const ids = KArray.get(_rows, "id")
         if (ids.length == 0) {
-          console.log("Skip where", _rows);
           return (options.plain ? null : [])
         }
         if (options.offset && options.offset >= ids.length) {
@@ -454,6 +480,7 @@ export class KishiModel extends Model {
         _options.where = ids.length == 1 ? { id: ids[0] } : { id: { [KOp("in")]: ids } }
       }
       return await (this as any)._findAll(_options) as KishiModel[] | KishiModel | null
+
     }
     (this as any).findAll = findAll.bind(this);
     (this as any)._count = this.count.bind(this);
@@ -493,7 +520,6 @@ export class KishiModel extends Model {
       if (include || diffPaths.length > 0) {
         let rows: KishiModel[] = [] as KishiModel[]
         let count: number
-        // console.log({ where, include, wherePaths, diffPaths });
         delete _options.limit
         delete _options.offset
         delete _options.group
@@ -503,7 +529,6 @@ export class KishiModel extends Model {
         const ids = KArray.get(_rows, "id")
         count = ids.length
         if (ids.length == 0) {
-          console.log("Skip where", _rows);
           return { rows: [], count }
         }
         if (options.offset && options.offset >= count) {
@@ -671,7 +696,7 @@ export class KishiModel extends Model {
       options.foreignName = (options.foreignKey as ForeignKeyOptions)?.name || (options.foreignKey as string);
       let final: FinalAssociation | null = null
       switch (options.type) {
-        case "belongsTo":
+        case 'belongsTo':
           options.idName = options.foreignName
           defaults(options, {
           })
@@ -683,7 +708,7 @@ export class KishiModel extends Model {
           final.sourceKey = options.foreignName
           final.targetKey = "id"
           break;
-        case "hasOne":
+        case 'hasOne':
           options.idName = options.idName || options.as + "Id"
           defaults(options.actionMap, { Create: "Create", Update: "Update", Link: "Set" });
           defaults(options.schemaMap, { full: "pure", nested: "pure" });
@@ -692,7 +717,7 @@ export class KishiModel extends Model {
           final.sourceKey = "id"
           final.targetKey = options.foreignName
           break;
-        case "hasMany":
+        case 'hasMany':
           options.idName = options.idName || options.as + "Id"
           defaults(options.actionMap, { Create: "Create", Update: "Update", Link: "Set" });
           defaults(options.schemaMap, { full: null, nested: null });
@@ -701,7 +726,7 @@ export class KishiModel extends Model {
           final.sourceKey = "id"
           final.targetKey = options.foreignName
           break;
-        case "belongsToMany":
+        case 'belongsToMany':
           options.idName = options.idName || options.as + "Id"
           defaults(options.actionMap, { Create: "Set", Update: "Set", Link: "Set" });
           defaults(options.schemaMap, { full: null, nested: null });
@@ -741,7 +766,7 @@ export class KishiModel extends Model {
     let rows = (options as any).rows as KishiModel[]
     if (!rows) {
       attributes = [...new Set([...attributes, "id"])];
-      rows = await this.findAll({ attributes, where, transaction })
+      rows = await this.findAll({ attributes, where })
       const ids = KArray.get(rows, "id")
       options.where = ids.length > 0 ? { id: { [KOp("in")]: ids } } : { id: null }
       if (ids.length == 0) {
@@ -759,7 +784,7 @@ export class KishiModel extends Model {
           missingAtts.push(att)
       }
       if (missingAtts.length > 0) {
-        const missingRows = await this.findAll({ attributes: ["id", ...missingAtts], where, transaction })
+        const missingRows = await this.findAll({ attributes: ["id", ...missingAtts], where })
         if (missingRows.length != rows.length) {
           const err = new Error(`${this.name}.LoadOptionsRows, missingRows Length not matched (${missingRows.length} != ${rows.length})`)
           console.error(err);
@@ -768,7 +793,7 @@ export class KishiModel extends Model {
         for (var row of rows) {
           const matched = missingRows.find(missing => missing.id == row.id)
           if (!matched) {
-            console.error(row.id);
+            console.error(`${this.name}.LoadOptionsRows:row not matched`, row.id);
             continue
           }
           for (const att of missingAtts) {
@@ -828,8 +853,7 @@ export class KishiModel extends Model {
       Target.afterDestroy(key + "_afterDestroy", async (row, options) => {
         let keyOptions = (options as any)[key] as UpdateOptions & { attributes: any }
         if (!keyOptions) {
-          console.log(key + "_afterDestroy");
-          console.log(new Error().stack);
+          console.warn(`${Target.name}.afterDestroy: no keyOptions for ${key}`);
         }
         console.log(key, keyOptions);
         if (keyOptions.hooks == false)
@@ -845,6 +869,8 @@ export class KishiModel extends Model {
         const rows = await Target.LoadOptionsRows(options as UpdateOptions)
         if (rows.length == 0)
           return
+        if (type == "no action")
+          throw `${type}:ON DELETE NO ACTION`
         var keyOptions = {
           transaction: options.transaction,
           where: { [sourceKey]: { [KOp("in")]: KArray.get(rows, "id") } },
@@ -862,8 +888,7 @@ export class KishiModel extends Model {
         let keyOptions = (options as any)[key] as UpdateOptions & { attributes: any }
         let rows = (options as any).rows as KishiModel[]
         if (!keyOptions) {
-          console.log(key + "_afterDestroy");
-          console.log(new Error().stack);
+          console.warn(`${Target.name}.afterBulkDestroy: no keyOptions for ${key}`);
         }
         if (rows && rows.length == 0)
           return
@@ -877,20 +902,20 @@ export class KishiModel extends Model {
         continue
       const Target = association.Target;
       switch (association.type) {
-        case "belongsTo":
+        case 'belongsTo':
           association.otherAssociation = Object.values(Target.finalAssociations).find((_association) => {
             if (_association.type != "hasOne" && _association.type != "hasMany") return false;
             return _association.Target == this && _association.foreignName == association.foreignName;
           }) as KishiHasMany | KishiHasOne | undefined;
           break;
-        case "hasMany":
-        case "hasOne":
+        case 'hasMany':
+        case 'hasOne':
           association.otherAssociation = Object.values(Target.finalAssociations).find((_association) => {
             if (_association.type != "belongsTo") return false;
             return _association.Target == this && _association.foreignName == association.foreignName;
           }) as KishiBelongsTo | undefined;
           break;
-        case "belongsToMany":
+        case 'belongsToMany':
           association.otherAssociation = (Object.values(Target.finalAssociations)).find((other) => {
             let me = association as KishiBelongsToMany
             if (other.type != "belongsToMany") return false;
@@ -906,88 +931,134 @@ export class KishiModel extends Model {
         console.warn(`${association.Target.name}.${this.name}_as_${association.as} generated from ${this.name}.${association.as}`);
       }
     }
-    for (const sourceField in this.rawAttributes) {
+    let binderss = Object.keys(this.rawAttributes).map(sourceField => {
       const attribute = this.rawAttributes[sourceField] as KishiModelAttributeColumnOptions
-      if (attribute.binder) {
-        const { associationName, targetField } = attribute.binder
-        const association = this.finalAssociations[associationName]
-        if (!association)
-          throw `Unvalid Association ${this.name}.${associationName}`
-        if (!(association.type == "belongsTo"))
-          throw `Unvalid Association Type "${association.type}" for ${this.name}.${associationName}`
-        const { Target } = association
-        if (!Target.rawAttributes[targetField])
-          throw `Unvalid targetField ${this.name}.${associationName}.${targetField}`
-        const { sourceKey, targetKey } = association
-        const loadFieldFromTarget = async (targetInstance: KishiModel, transaction?: Transaction | null) => {
-          let value: any = targetInstance.get(targetField)
-          if (targetInstance.dataValues[targetKey]) {
-            await this.update({ [sourceField]: value }, { where: { [sourceKey]: targetInstance.dataValues[targetKey] }, transaction })
+      const binders = Array.isArray(attribute.binder) ? attribute.binder! : [attribute.binder!].filter(b => b)
+      return binders.map(binder => {
+        binder.sourceField = sourceField;
+        return binder
+      })
+    })
+    let modelBinders: typeof binderss[number] = []
+    for (const binders of binderss)
+      modelBinders.push(...binders)
+    for (const associationName in this.finalAssociations) {
+      const associationBinders = modelBinders.filter(binder => binder.associationName == associationName)
+      const hardBinders = associationBinders.filter(binder => binder.hardBind)
+      const targetFields = associationBinders.map(binder => binder.targetField)
+
+      if (associationBinders.length == 0)
+        continue
+      const association = this.finalAssociations[associationName]
+      if (!(association.type == "belongsTo"))
+        throw `Unvalid Binder: Association Type "${association.type}" for ${this.name}.${associationName}`
+      const { Target } = association
+      for (const binder of associationBinders) {
+        if (!Target.rawAttributes[binder.targetField])
+          throw `Unvalid targetField ${this.name}.${associationName}.${binder.targetField}`
+      }
+      const { sourceKey, targetKey } = association
+      const loadFieldFromTarget = async (targetInstance: KishiModel, transaction?: Transaction | null) => {
+        if (targetInstance.dataValues[targetKey]) {
+          let data: any = {}
+          for (const binder of associationBinders) {
+            data[binder.sourceField!] = targetInstance.get(binder.targetField)
           }
+          await this.update(data, { where: { [sourceKey]: targetInstance.dataValues[targetKey] }, transaction, silent: true })
         }
-        const loadFieldFromSource = async (instance: KishiModel, transaction?: Transaction | null) => {
-          let value: any | any[] = null
-          const targetId = instance.dataValues[sourceKey]
-          let rootTransaction = transaction
-          while ((rootTransaction as any)?.parent)
-            rootTransaction = (rootTransaction as any)?.parent
-          if (rootTransaction) {
-            return (rootTransaction as Transaction).afterCommit(async () => {
-              let target: KishiModel | null = null
-              if (targetId) {
-                target = await Target.findOne({ attributes: [targetKey, targetField], where: { [targetKey]: targetId } })
+      }
+      const loadFieldFromSource = async (instance: KishiModel, transaction?: Transaction | null) => {
+        const targetId = instance.dataValues[sourceKey]
+        if (!targetId) {
+          for (const binder of hardBinders) {
+            instance.set(binder.sourceField!, null)
+          }
+          return
+        }
+        let rootTransaction = transaction
+        while ((rootTransaction as any)?.parent)
+          rootTransaction = (rootTransaction as any)?.parent
+        if (rootTransaction) {
+          return (rootTransaction as Transaction).afterCommit(async () => {
+            let target: KishiModel | null = null
+            target = await Target.findOne({ attributes: [targetKey, ...targetFields], where: { [targetKey]: targetId } })
+            if (target) {
+              let data: any = {}
+              for (const binder of associationBinders) {
+                data[binder.sourceField!] = target.get(binder.targetField)
               }
-              if (target || attribute.binder?.hardBind)
-                await this.update({ [sourceField]: target?.getDataValue(targetField) || null }, { where: { [sourceKey]: targetId } })
-            })
-          }
-          if (targetId) {
-            const target = await Target.findOne({ attributes: [targetKey, targetField], where: { [targetKey]: targetId } })
-            value = target?.getDataValue(targetField) || null
-          }
-          if (value || attribute.binder?.hardBind)
-            instance.setDataValue(sourceField, value)
+              await this.update(data, { where: { [sourceKey]: targetId }, silent: true })
+            } else if (hardBinders.length) {
+              let hardData: any = {}
+              for (const binder of hardBinders) {
+                hardData[binder.sourceField!] = null
+              }
+              await this.update(hardData, { where: { [sourceKey]: targetId }, silent: true })
+            }
+          })
         }
 
-        this.beforeCreate(async (instance, options) => {
+        const target = await Target.findOne({ attributes: [targetKey, ...targetFields], where: { [targetKey]: targetId } })
+        if (target) {
+          for (const binder of associationBinders) {
+            instance.set(binder.sourceField!, target.get(binder.targetField))
+          }
+        } else if (hardBinders.length) {
+          for (const binder of hardBinders) {
+            instance.set(binder.sourceField!, null)
+          }
+        }
+      }
+      this.beforeCreate(async (instance, options) => {
+        await loadFieldFromSource(instance, options.transaction)
+      })
+
+      this.beforeUpdate(async (instance, options) => {
+        if (options.fields?.includes(sourceKey)) {
           await loadFieldFromSource(instance, options.transaction)
-        })
+        }
+      })
 
-        this.beforeUpdate(async (instance, options) => {
-          if (options.fields?.includes(sourceKey)) {
-            await loadFieldFromSource(instance, options.transaction)
-          }
-        })
-
-        Target.afterUpdate(async (targetInstance, options) => {
-          if (options.fields?.includes(targetField)) {
-            await loadFieldFromTarget(targetInstance, options.transaction)
-          }
-        })
-
-        Target.afterDestroy(async (targetInstance, options) => {
+      Target.afterUpdate(async (targetInstance, options) => {
+        if (KArray.intersection(options.fields!, targetFields).length) {
           await loadFieldFromTarget(targetInstance, options.transaction)
-        })
+        }
+      })
 
-        Target.beforeBulkUpdate(async (options) => {
-          if (options.fields?.includes(targetField)) {
-            await Target.LoadOptionsRows(options, [targetKey])
+      Target.afterDestroy(async (targetInstance, options) => {
+        await loadFieldFromTarget(targetInstance, options.transaction)
+      })
+
+      Target.beforeBulkUpdate(async (options) => {
+        const intersectionFields = KArray.intersection(options.fields!, targetFields)
+        if (intersectionFields.length) {
+          await Target.LoadOptionsRows(options, intersectionFields)
+        }
+      })
+
+      Target.afterBulkUpdate(async (options) => {
+        const intersectionFields = KArray.intersection(options.fields!, targetFields)
+        if (intersectionFields.length) {
+          let data: any = {}
+          for (const binder of associationBinders) {
+            if (intersectionFields.includes(binder.targetField))
+              data[binder.sourceField!] = (options as any).attributes[binder.targetField]
           }
-        })
+          let rows = (options as any).rows as KishiModel[]
+          const sourceIds = KArray.get(rows, targetKey)
+          if (sourceIds.length)
+            await this.update(data, { where: { [sourceKey]: { [KOp("in")]: sourceIds } }, transaction: options.transaction, silent: true })
+        }
+      })
 
-        Target.afterBulkUpdate(async (options) => {
-          if (options.fields?.includes(targetField)) {
-            const value = (options as any).attributes[targetField]
-            let rows = (options as any).rows as KishiModel[]
-            const sourceIds = KArray.get(rows, targetKey)
-            await this.update({ [sourceField]: value }, { where: { [sourceKey]: { [KOp("in")]: sourceIds } }, transaction: options.transaction })
-          }
+      if (hardBinders.length) {
+        let hardData: any = {}
+        for (const binder of hardBinders) {
+          hardData[binder.sourceField!] = null
+        }
+        Target.afterBulkDestroy(async (options) => {
+          await this.update(hardData, { where: { [sourceKey]: null }, transaction: options.transaction, silent: true })
         })
-
-        if (attribute.binder?.hardBind)
-          Target.afterBulkDestroy(async (options) => {
-            await this.update({ [sourceField]: null }, { where: { [sourceKey]: null }, transaction: options.transaction })
-          })
       }
     }
   }
@@ -1022,14 +1093,18 @@ export class KishiModel extends Model {
   }
   static SchemaToPaths(schema: string | null, toView = false, stack: string[] = []): string[] {
     let paths: string[] = [];
-    if (!schema) return paths
+    if (!schema)
+      return paths
+    if (schema in this.schemas)
+      return this.schemas[schema];
+
     const attribtues = this.getAttributes();
     switch (schema) {
-      case "id":
+      case 'id':
         return ["id"];
-      case "full":
-      case "nested":
-      case "pure":
+      case 'full':
+      case 'nested':
+      case 'pure':
         paths = Object.keys(attribtues);
         if (toView)
           paths = paths.filter((attributeName) => {
@@ -1040,7 +1115,6 @@ export class KishiModel extends Model {
       default:
         break;
     }
-    if (schema in this.schemas) paths = this.schemas[schema];
     const associations = this.finalAssociations;
     for (const associationName in associations) {
       const association = associations[associationName];
@@ -1076,7 +1150,11 @@ export class KishiModel extends Model {
       const { as } = _include
       const association = this.finalAssociations[as || ""]
       const model = (_include.model || (_include.association as Association<KishiModel, KishiModel>).target) as typeof KishiModel
+      if (!model)
+        continue
       const includePaths = model.FindOptionsToPaths(_include)
+      if (!association)
+        continue
       if (!includePaths.includes("id"))
         includePaths.push("id")
       if (association.type == "belongsToMany") {
@@ -1092,7 +1170,7 @@ export class KishiModel extends Model {
     const associations = this.finalAssociations;
     for (const associationName in associations) {
       const association = associations[associationName];
-      let associationPaths = paths.filter((path) => path.startsWith(associationName));
+      let associationPaths = paths.filter((path) => path.startsWith(`${associationName}.`));
       if (associationPaths.length == 0) continue;
       if (association.type == "hasMany" || association.type == "belongsToMany")
         return true
@@ -1128,7 +1206,7 @@ export class KishiModel extends Model {
     const associations = this.finalAssociations;
     for (const associationName in associations) {
       const association = associations[associationName];
-      let associationPaths = paths.filter((path) => path.startsWith(associationName));
+      let associationPaths = paths.filter((path) => path.startsWith(`${associationName}.`));
       if (associationPaths.length == 0) continue;
       associationPaths = Array.from(associationPaths, (path) => pathHead(path)[1]);
       dependencies.push(...association.Target.PathsToDependencies(associationPaths))
@@ -1161,7 +1239,7 @@ export class KishiModel extends Model {
     const associations = this.finalAssociations;
     for (const associationName in associations) {
       const association = associations[associationName];
-      let associationImplicit = implicit.filter((path) => path.startsWith(associationName));
+      let associationImplicit = implicit.filter((path) => path.startsWith(`${associationName}.`));
       if (associationImplicit.length == 0) continue;
       associationImplicit = Array.from(associationImplicit, (path) => path.split(".").slice(1).join("."));
       const associationExplicit = association.Target.PathsExplicit(associationImplicit)
@@ -1170,7 +1248,7 @@ export class KishiModel extends Model {
       }
       if (association.type == "belongsToMany") {
         const { Through } = association
-        let throughImplicit = Array.from(associationImplicit.filter((path) => path.startsWith(`${Through.name}`)))
+        let throughImplicit = Array.from(associationImplicit.filter((path) => path.startsWith(`${Through.name}.`)))
         throughImplicit = Array.from(throughImplicit, (path) => path.split(".").slice(1).join("."));
         const throughExplicit = Through.PathsExplicit(associationImplicit)
         for (const path of throughExplicit) {
@@ -1200,7 +1278,7 @@ export class KishiModel extends Model {
     const associations = this.finalAssociations;
     for (const associationName in associations) {
       const association = associations[associationName];
-      let associationPaths = paths.filter((path) => path.startsWith(associationName));
+      let associationPaths = paths.filter((path) => path.startsWith(`${associationName}.`));
       if (associationPaths.length == 0) continue;
       const track = this.ValidateStack(association, stack);
       if (!track) continue;
@@ -1216,7 +1294,7 @@ export class KishiModel extends Model {
       };
       if (association.type == "belongsToMany") {
         const { Through } = association
-        let throughPaths = Array.from(associationPaths.filter((path) => path.startsWith(`${association.Through.name}`)),
+        let throughPaths = Array.from(associationPaths.filter((path) => path.startsWith(`${association.Through.name}.`)),
           (path) => path.split(".").slice(1).join("."))
         if (throughPaths.length > 0)
           associationOptions.through = Through.PathsToFindOptions(throughPaths, stack)
@@ -1232,16 +1310,13 @@ export class KishiModel extends Model {
     const paths = this.SchemaToPaths(schema, toView);
     return this.PathsToFindOptions(paths);
   }
-  async LoadAssociation(associationName: string, where?: WhereOptions): Promise<KishiModel | KishiModel[] | null> {
+  async LoadAssociation(associationName: string, associationPaths: string[] = []): Promise<KishiModel | KishiModel[] | null> {
     if ((this as any)[associationName] != undefined) {
       return this
     }
-    const paths = ["id", `${associationName}.*`]
+    const paths = associationPaths.length ? ["id", ...(associationPaths.map(path => `${associationName}.${path}`))] :
+      ["id", (`${associationName}.*`)]
     let findOptions = this.Model.PathsToFindOptions(paths)
-    if (where) {
-      //TODO
-      // findOptions.where = where
-    }
     const _this = await this.Model.findByPk((this as any)["id"], findOptions)
     if (_this)
       return (_this as any)[associationName]
@@ -1295,7 +1370,8 @@ export class KishiModel extends Model {
           const _associated = associated as KishiModel[]
           const { Through } = association;
           for (const idx of _associated.keys()) {
-            associatedView[idx][Through.name] = Through.toView(_associated[idx].get(Through.name) as KishiModel, stack);
+            associatedView[idx][Through.name] = (_associated[idx] instanceof KishiModel) ? Through.toView(_associated[idx].get(Through.name) as KishiModel, stack)
+              : (_associated[idx] as any)[Through.name];
           }
         }
         if (isPCIR(association))
@@ -1399,7 +1475,6 @@ export class KishiModel extends Model {
 
   public async LinkAssociation(name: string, values: any | any[], options?: InstanceUpdateOptions | undefined): Promise<this> {
     console.log(`${this.Model.name}[${this.id}].LinkAssociation(${name})`);
-    console.log(values);
 
     const association = this.Model.finalAssociations[name]
     if (!association) throw `Unvalid Association ${this.Model.name}.${name}`
@@ -1408,18 +1483,18 @@ export class KishiModel extends Model {
     let data = KArray.toRecords(_values, "id");
     let ids = KArray.get(data, "id");
     switch (association.type) {
-      case "belongsTo":
-        this.set(association.sourceKey, ids)
-        await this.save(options)
+      case 'belongsTo':
+        this.set(association.sourceKey, ids as any)
+        await this.save({ transaction: options?.transaction })
         return this
-      case "hasOne":
-      case "hasMany":
+      case 'hasOne':
+      case 'hasMany':
         await association.Target.update({ [association.targetKey]: this.get(association.sourceKey) }, {
           transaction: options?.transaction,
           where: { id: { [KOp("in")]: ids } }
         });
         return this
-      case "belongsToMany":
+      case 'belongsToMany':
         var throughData = []
         var fields = []
         for (const data_ of data) {
@@ -1431,9 +1506,6 @@ export class KishiModel extends Model {
           fields.push(...Object.keys(data_[association.Through.name] || {}))
         }
         fields = [...new Set(fields)].filter(field => field != "id")
-        console.log(`${association.Through.name}.bulkCreate`);
-        console.log('throughData', throughData);
-        console.log('fields', fields);
         if (fields.length > 0)
           await association.Through.bulkCreate(throughData, { updateOnDuplicate: fields, transaction: options?.transaction, })
         else
@@ -1443,7 +1515,6 @@ export class KishiModel extends Model {
   }
   public async SetAssociation(name: string, values: any | any[], options?: InstanceUpdateOptions | undefined): Promise<this> {
     console.log(`${this.Model.name}[${this.id}].SetAssociation(${name})`);
-    console.log(values);
 
     const association = this.Model.finalAssociations[name]
     if (!association) throw `Unvalid Association ${this.Model.name}.${name}`
@@ -1453,10 +1524,10 @@ export class KishiModel extends Model {
     let ids = KArray.get(data, "id");
     await this.LinkAssociation(name, values, options)
     switch (association.type) {
-      case "belongsTo":
-      case "hasOne":
+      case 'belongsTo':
+      case 'hasOne':
         return this
-      case "hasMany":
+      case 'hasMany':
         await association.Target.update({ [association.targetKey]: null }, {
           transaction: options?.transaction,
           where: {
@@ -1465,7 +1536,7 @@ export class KishiModel extends Model {
           }
         });
         return this
-      case "belongsToMany":
+      case 'belongsToMany':
         await association.Through.destroy({
           transaction: options?.transaction,
           where: {
@@ -1482,7 +1553,6 @@ export class KishiModel extends Model {
     if (!association) throw `Unvalid Association ${this.Model.name}.${name}`
     let _values: any[] = Array.isArray(values) ? values : [values]
     _values = KArray.clense(_values);
-    console.log(values);
     let created: KishiModel[] = []
     for (let data of _values) {
       if (["hasOne", "hasMany"].includes(association.type))
@@ -1498,7 +1568,6 @@ export class KishiModel extends Model {
   }
   public async UpdateAssociation(name: string, values?: any | any[], options?: InstanceUpdateOptions | undefined): Promise<KishiModel[]> {
     console.log(`${this.Model.name}[${this.id}].UpdateAssociation(${name})`);
-    console.log(values);
     const association = this.Model.finalAssociations[name]
     if (!association) throw `Unvalid Association ${this.Model.name}.${name}`
     if (!values) return []
@@ -1530,7 +1599,6 @@ export class KishiModel extends Model {
   }
   public async UpsertAssociation(name: string, values?: any | any[], options?: InstanceUpdateOptions | undefined): Promise<[KishiModel, boolean][]> {
     console.log(`${this.Model.name}[${this.id}].UpsertAssociation(${name})`);
-    console.log(values);
     const association = this.Model.finalAssociations[name]
     if (!association) throw `Unvalid Association ${this.Model.name}.${name}`
     if (!values) return []
@@ -1557,13 +1625,13 @@ export class KishiModel extends Model {
       if (association.type != "belongsTo") continue
       const { foreignName, Target } = association
       switch (association.actionMap[action]) {
-        case "Create":
+        case 'Create':
           if (!values[foreignName]) {
             const createdAssociation = await Target.Create(values[name], options)
             values[foreignName] = createdAssociation.id
           }
           break
-        case "Update":
+        case 'Update':
           if (values[foreignName]) {
             const target = await Target.findByPk(values[foreignName])
             if (!target) {
@@ -1572,7 +1640,7 @@ export class KishiModel extends Model {
             }
             await target.Update(values[name], options)
           }
-        case "Upsert":
+        case 'Upsert':
           if (!values[foreignName]) {
             const upsertedAssociation = await Target.Upsert(values[name], options)
             values[foreignName] = upsertedAssociation[0].id
@@ -1608,21 +1676,21 @@ export class KishiModel extends Model {
         let upserted: [KishiModel, boolean][] = []
         console.log(`${this.Model.name}[${this.id}].${[action]}Action[${name}]:${association.actionMap[action]}`);
         switch (association.actionMap[action]) {
-          case "Create":
+          case 'Create':
             await this.CreateAssociation(name, data, options)
             break
-          case "Update":
+          case 'Update':
             await this.UpdateAssociation(name, toUpdate, options)
             break;
-          case "Upsert":
+          case 'Upsert':
             await this.UpsertAssociation(name, data, options)
             break;
-          case "UpsertRemove":
+          case 'UpsertRemove':
             upserted = await this.UpsertAssociation(name, data, options)
             ids = KArray.get(upserted, [0, "id"]);
             await this.SetAssociation(name, ids, options)
             break;
-          case "UpsertDel":
+          case 'UpsertDel':
             upserted = await this.UpsertAssociation(name, data, options)
             ids = KArray.get(upserted, [0, "id"]);
             await Target.destroy({
@@ -1642,13 +1710,13 @@ export class KishiModel extends Model {
         let ids = KArray.get(data, "id").filter(id => id)
         console.log(`${this.Model.name}[${this.id}].UpdateAction[${name}]:${association.actionMap.Update}`);
         switch (association.actionMap.Link) {
-          case "Add":
+          case 'Add':
             await this.LinkAssociation(name, data, options)
             break;
-          case "Set":
+          case 'Set':
             await this.SetAssociation(name, data, options)
             break;
-          case "SetDel":
+          case 'SetDel':
             if (association.type != "hasMany") continue
             await this.LinkAssociation(name, ids, options)
             await association.Target.destroy({
@@ -1666,7 +1734,7 @@ export class KishiModel extends Model {
 
   public static async Create(values?: any | undefined, options?: CreateOptions | undefined): Promise<KishiModel> {
     if (!options?.transaction) {
-      const result = await this.sequelize?.transaction(async (transaction) => {
+      const result = await this.sequelize!.transaction(async (transaction) => {
         let _options = (options && { ...options } || {}) as CreateOptions
         _options.transaction = transaction
         return await this.Create(values, _options)
@@ -1691,13 +1759,13 @@ export class KishiModel extends Model {
       if (association.type != "belongsTo") continue
       const { foreignName, Target } = association
       switch (association.actionMap.Create) {
-        case "Create":
+        case 'Create':
           if (!values[foreignName]) {
             const createdAssociation = await Target.Create(values[name], options)
             values[foreignName] = createdAssociation.id
           }
           break
-        case "Upsert":
+        case 'Upsert':
           if (!values[foreignName]) {
             const upsertedAssociation = await Target.Upsert(values[name], options)
             values[foreignName] = upsertedAssociation[0].id
@@ -1713,7 +1781,7 @@ export class KishiModel extends Model {
 
   public async Update(values?: any | undefined, options?: InstanceUpdateOptions | undefined): Promise<this> {
     if (!options?.transaction) {
-      const result = await this.sequelize?.transaction(async (transaction) => {
+      const result = await this.sequelize!.transaction(async (transaction) => {
         let _options = (options && { ...options } || {}) as InstanceUpdateOptions
         _options.transaction = transaction
         return await this.Update(values, _options)
@@ -1735,10 +1803,10 @@ export class KishiModel extends Model {
       }
       console.log(`${this.Model.name}[${this.id}].UpdateAction[${name}]:${association.actionMap.Update}`);
       switch (association.actionMap.Update) {
-        case "Update":
+        case 'Update':
           await this.UpdateAssociation(name, values[name], options)
           break;
-        case "Upsert":
+        case 'Upsert':
           if (this.get(foreignName)) {
             await this.UpdateAssociation(name, values[name], options)
           } else {
@@ -1754,7 +1822,7 @@ export class KishiModel extends Model {
   }
   static async Upsert(values?: any | undefined, options?: CreateOptions | undefined): Promise<[KishiModel, boolean]> {
     if (!options?.transaction) {
-      const result = await this.sequelize?.transaction(async (transaction) => {
+      const result = await this.sequelize!.transaction(async (transaction) => {
         let _options = (options && { ...options } || {}) as InstanceUpdateOptions
         _options.transaction = transaction
         return await this.Upsert(values, _options)
@@ -1764,7 +1832,6 @@ export class KishiModel extends Model {
     let newRecord = true
     let where: WhereOptions | undefined = this.DataToWhere(values)
     if (where) {
-      console.log(where);
       let toUpdate = await this.findOne({ where })
       if (toUpdate) {
         newRecord = false
@@ -1773,7 +1840,7 @@ export class KishiModel extends Model {
       }
     }
 
-    const upserted = await this.sequelize?.transaction({ transaction: options.transaction }, async (transaction) => {
+    const upserted = await this.sequelize!.transaction({ transaction: options.transaction }, async (transaction) => {
       let _options = (options && { ...options } || {}) as CreateOptions
       _options.transaction = transaction
       return await this.Create(values, _options)
@@ -1781,15 +1848,26 @@ export class KishiModel extends Model {
       .catch(async err => {
         if (!err.fields)
           throw err
-        console.error(err.fields);
-        console.error(values);
+
+        const dataValues = err.errors[0].instance.dataValues
+        console.warn(`${this.name}.Upsert: initial Create attempt failed`)
+        console.warn("err", err);
+        console.warn("fields", err.fields);
+        console.warn("dataValues", dataValues);
         let where: any = {}
         if (err.fields["PRIMARY"]) {
           where["id"] = err.fields["PRIMARY"]
           delete err.fields["PRIMARY"]
         }
         for (const key in err.fields) {
-          where[key] = values[key]
+          const index = this.initialOptions.indexes?.find(i => i.name == key)
+          if (index) {
+            for (const field of index.fields!) {
+              where[field as string] = dataValues[field as string]
+            }
+          } else {
+            where[key] = dataValues[key]
+          }
         }
         let toUpdate = await this.findOne({ where })
         newRecord = false

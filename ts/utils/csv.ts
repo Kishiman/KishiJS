@@ -4,6 +4,18 @@ import { parse } from "csv-parse"
 import { Parser } from "json2csv"
 import fileUpload from "express-fileupload";
 export class CSVLib {
+  static ParseLine(line: string): string[] {
+    const regex = /"([^"]*)"/g; // Regex pattern to match strings within double quotes
+    const matches = line.match(regex); // Find all matches
+    if (!matches) {
+      return [];
+    }
+    const extractedStrings = matches.map(match => match.replace(/"/g, '')); // Remove double quotes from matches  
+    return extractedStrings;
+  }
+  static ParseLines(lines: string[]): string[][] {
+    return lines.map(line=>this.ParseLine(line))
+  }
   static XlsxToCsv(inPath: string, outPath: string) {
     // Load the XLSX file
     const workbook = XLSX.readFile(inPath);
@@ -50,6 +62,17 @@ export class CSVLib {
     }
     return recordsPerSheet
   }
+  static CsvStringToRecords(csvStr: string): Promise<Record<string, string>[]> {
+    return new Promise((resolve, reject) => {
+      try {
+        parse(csvStr, { delimiter: ',', columns: true }, (err, records) => {
+          if (err)
+            return reject(err)
+          resolve(records)
+        });
+      } catch (error) { reject(error) }
+    })
+  }
   static CsvToRecords(source: string | fileUpload.UploadedFile, encoding?: BufferEncoding): Promise<Record<string, string>[]> {
     return new Promise((resolve, reject) => {
       try {
@@ -67,6 +90,12 @@ export class CSVLib {
         });
       } catch (error) { reject(error) }
     })
+  }
+  static RecordsToCSVString(records: any[]) {
+    // Convert the records to CSV data
+    const parser = new Parser();
+    return parser.parse(records);
+
   }
   static RecordsToCSV(records: any[], outPath: string, encoding?: BufferEncoding) {
     // Convert the records to CSV data

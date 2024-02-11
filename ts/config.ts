@@ -17,7 +17,9 @@ export let config = {
   uploadPath: "uploads",
   auth: {
     signUpTypes: ["Client"] as string[],
+    adminAddTypes: ["Client"] as string[],
     tokenSecret: process.env.AUTH_TOKEN_SECRET || "AUTH_Secret",
+    resetPasswordTokenSecret: process.env.AUTH_RESET_PASSWORD_TOKEN_SECRET || "AUTH_Secret",
     passwordSecret: process.env.AUTH_PASSWORD_SECRET || "",
     lockIp: process.env.AUTH_lOCK_IP ? true : false,
     tokenExpiration: Number(process.env.AUTH_TOKEN_EXPIRATION) || undefined,
@@ -45,7 +47,11 @@ export let config = {
   redis: {
     url: process.env.REDIS_URL || "",
   },
-  openAIApiKey: process.env.OPENAI_API_KEY,
+  openAI: {
+    apiKey: process.env.OPENAI_API_KEY,
+    model: process.env.CONTRACTAI_MODEL ?? "gpt-4-1106-preview",
+    maxPrompt: Number(process.env.CONTRACTAI_MAX_PROMPT ?? 128000),
+  },
   zoom: {
     sdkKey: process.env.ZOOM_SDK_KEY || "",
     sdkSecret: process.env.ZOOM_SDK_SECRET || "",
@@ -134,18 +140,15 @@ export let config = {
   },
   server: {
     protocol: process.env.HTTPS ? "https://" : "http://" as "http://" | "https://",
-    ip: process.env.SERVER_IP || "127.0.0.1",
     port: Number(process.env.SERVER_PORT) || 4000,
-    isLocal: process.env.SERVER_IP ? true : false,
-    publicUrl: "",
+    publicUrl: process.env.PUBLIC_URL!,
   },
-  corsOrigin: [`https://${process.env.SERVER_DOMAIN || ""}`],
   domainName: "api.DOMAIN.com",
   register: [],
   frontEndName: process.env.CLIENT_NAME || "",
   frontEndUrl: process.env.CLIENT_URL || "",
+  resetPasswordLandingPage: "/reset-password",
   token_ip: process.env.DEV_MODE ? false : true,
   token_expiresIn: 7 * 24 * 60 * 60,
 };
 config.S3.urlPrefix = `https://${config.S3.BUCKET}.s3.${config.S3.REGION}.amazonaws.com/`
-config.server.publicUrl = `${config.server.protocol}${config.server.ip}:${config.server.port}`

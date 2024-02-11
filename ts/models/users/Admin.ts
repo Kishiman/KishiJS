@@ -1,5 +1,5 @@
 import { ModelHooks } from "sequelize/types/hooks";
-import { KishiModel, KishiModelAttributes, KishiDataTypes, KOp, typesOfKishiAssociationOptions, CrudOptions } from "../../sequelize";
+import { KishiModel, KishiModelAttributes, KishiDataTypes, typesOfKishiAssociationOptions, CrudOptions } from "../../sequelize";
 import { User } from "../User";
 import { config } from "../../config"
 const { admin } = config

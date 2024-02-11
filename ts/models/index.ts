@@ -30,27 +30,26 @@ export const sequelize = new Sequelize(name, user, password, {
 //Initilize models
 
 import { ExternalToken } from "./ExternalToken";
-import { User, UserUserFollow } from "./User";
+import { User } from "./User";
 import { Admin } from "./users";
 import { Client } from "./users";
 import { Notification, Notification_User } from "./Notification";
 import { Event, Event_User } from "./Event";
+import { OpenAIResponseLog } from "./OpenAIResponseLog";
 
-export { User } from "./User";
-export { ExternalToken } from "./ExternalToken";
-export { Notification, Notification_User } from "./Notification";
-export { Event, Event_User } from "./Event";
 
 export const models: {
   [name: string]: typeof KishiModel;
 } = {
   ExternalToken,
-  User, UserUserFollow,
+  User,
   Admin,
   Client,
   Notification, Notification_User,
   Event, Event_User,
+  OpenAIResponseLog,
 };
+
 for (const name in models) {
   models[name].Init(sequelize, models)
 }

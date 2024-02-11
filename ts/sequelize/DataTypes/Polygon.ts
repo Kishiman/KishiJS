@@ -16,7 +16,7 @@ export class Polygon implements KishiDataType {
     this.getters?.push((value: Literal) => {
       if (!value) return value
       switch (this.dialect) {
-        case "mysql":
+        case 'mysql':
           const geomStr = (value.val as string).slice("ST_GeomFromText('POLYGON(".length, (value.val as string).length - ")')".length)
           return geomStr.slice(1, geomStr.length - 1).split("),(").map(
             (polygonStr) => polygonStr.split(",").map(
@@ -39,7 +39,7 @@ export class Polygon implements KishiDataType {
       const polygon = value as [number,number][]
       let geomStr
       switch (this.dialect) {
-        case "mysql":
+        case 'mysql':
           geomStr = `(${polygon.map(([x, y]) => `${x} ${y}`).join(",")})`
           return literal(`ST_GeomFromText('POLYGON(${geomStr})')`)
         default:
@@ -63,7 +63,7 @@ export class Polygon implements KishiDataType {
     if ((value as Literal).val) return value
     // console.log("Polygon__sanitize", value);
     switch (this.dialect) {
-      case "mysql":
+      case 'mysql':
         const polygons = value.coordinates as [number,number][][]
         const geomStr = polygons.map(polygon => `(${polygon.map(([x, y]) => `${x} ${y}`).join(",")})`).join(",")
         return literal(`ST_GeomFromText('POLYGON(${geomStr})')`)

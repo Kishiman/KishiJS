@@ -1,13 +1,15 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { ModelHooks } from "sequelize/types/hooks";
-import { IUser } from "../interfaces";
+import { UserEntity } from "../domain/entities";
 import { typesOfKishiAssociationOptions, KishiModelAttributeColumnOptions, KOp, CrudOptions } from "../sequelize";
 import { KishiModel, KishiModelAttributes, KishiDataTypes } from "../sequelize";
 import { NotificationSource } from "../services/notification";
 export class Notification extends KishiModel {
   static crudOptions: CrudOptions = {
     "create": false,
-    "read": (user?: IUser) => { return user && { "$users.id$": user.id } || false },
+    "read": (user?: UserEntity) => { return user && { "$users.id$": user?.id } || false },
+    "update": false,
+    "delete": false,
   }
   static WhereFromDisplay(display: string) {
     return { message: { [KOp("iLike")]: `%${display}%` } }

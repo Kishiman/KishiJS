@@ -18,7 +18,10 @@ function generateXlsx(models: (typeof KishiModel)[]): void {
     const columns: ColumnInfo[] = [];
 
     // Get the column information for the model
+    console.log("sheetName", sheetName);
     for (const [columnName, columnDefinition] of Object.entries(model.rawAttributes)) {
+      console.log(columnName);
+
       const columnInfo: ColumnInfo = {
         name: columnName,
         sqlType: columnDefinition.type?.toString({}),

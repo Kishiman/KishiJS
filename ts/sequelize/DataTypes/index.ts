@@ -10,6 +10,7 @@ import { MultiEnum } from "./MultiEnum";
 import { Phone } from "./Phone";
 import { Point } from "./Point";
 import { Polygon } from "./Polygon";
+import { FileText } from "./TextFileType";
 
 export let KishiDataTypes = {
     ...DataTypes,
@@ -21,6 +22,7 @@ export let KishiDataTypes = {
     PHONE: Phone,
     FILE: FileType,
     FILES: FilesType,
+    FILETEXT: FileText,
     NAMEDFILES: NamedFilesType,
     S3FILE: FileS3Type,
     HASH: HashedType

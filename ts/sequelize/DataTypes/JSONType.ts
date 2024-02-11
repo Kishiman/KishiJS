@@ -1,7 +1,7 @@
 import { Dialect, Sequelize } from "sequelize";
 import { KishiDataType } from "../";
 export class JSONType implements KishiDataType {
-  ts_typeStr?: string = `object`;
+  ts_typeStr?: string = `any`;
   x: object = {};
   key = "JSONType";
   dialect: Dialect = "mysql";

@@ -35,13 +35,13 @@ export class ExternalAuthService {
 	static async VerifyExternalToken(accessToken: string, type: ExternalTokenType): Promise<TokenVerification | null> {
 		let response
 		switch (type) {
-			case "Google":
+			case 'Google':
 				response = await axios.get('https://oauth2.googleapis.com/tokeninfo', { params: { 'access_token': `${accessToken}` } })
 				return {
 					email: response.data.email,
 					expiresAt: new Date(response.data.exp),
 				}
-			case "LinkedIn":
+			case 'LinkedIn':
 				response = await axios.get('https://api.linkedin.com/v2/me', { headers: { 'Authorization': `Bearer ${accessToken}` } })
 				const linkedInData = response.data as LinkedInResponse
 				return {

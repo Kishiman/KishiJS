@@ -3,6 +3,9 @@ import { KishiModel, KishiModelAttributes, KishiDataTypes, typesOfKishiAssociati
 export class ExternalToken extends KishiModel {
   static crudOptions: CrudOptions = {
     "create": false,
+    "read": false,
+    "update": false,
+    "delete": false,
   }
   static TokenTypes = ["Google", "LinkedIn"]
   static initialAttributes: KishiModelAttributes = {

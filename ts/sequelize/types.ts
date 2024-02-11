@@ -1,5 +1,5 @@
 import { AbstractDataType, Association, AssociationOptions, DataType, Dialect, ForeignKeyOptions, ModelAttributeColumnOptions, ModelOptions, Op, Optional, WhereAttributeHash, WhereOptions } from "sequelize";
-import { IUser } from "../interfaces";
+import { UserEntity } from "../domain/entities";
 import { KFunction } from "../utils/function";
 import { KishiModel } from "./model";
 
@@ -126,10 +126,16 @@ export interface KishiModelAttributeColumnOptions extends ModelAttributeColumnOp
    * bind this attribute to an association field
    * @example "string","Number","any"
    */
-  binder?: {
+  binder?: TorArray<{
     associationName: string;
     targetField: string;
+    sourceField?: string;
     hardBind?: boolean;
+  }>
+  counter?: {
+    associationName: string;
+    targetField: string;
+    sourceField?: string;
   }
 }
 /**
@@ -369,7 +375,7 @@ export function isPI(association: FinalAssociation) {
 }
 
 export type CrudResponse = boolean | WhereAttributeHash
-export type CrudOption = CrudResponse | ((user?: IUser) => Async<CrudResponse>)
+export type CrudOption = CrudResponse | ((user?: UserEntity) => Async<CrudResponse>)
 export interface CrudOptions {
   "create"?: CrudOption,
   "read"?: CrudOption,

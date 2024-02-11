@@ -11,9 +11,9 @@ import { WebPushService } from "./webPush";
 import { FileLogger } from "../utils/fileLogger";
 import { KArray } from "../utils/array";
 
-import { User, Notification } from "../models";
-
-import { IUser, INotification } from "../interfaces";
+import { UserEntity, NotificationEntity } from "../domain/entities";
+import { User } from "../models/User";
+import { Notification } from "../models/Notification";
 
 const logger = new FileLogger("notification")
 
@@ -31,7 +31,7 @@ export interface NotificationSource {
 		onUpdate?: NotificationOptions | NotificationOptions[];
 	}
 }
-async function getUsers(model: typeof KishiModel, row: KishiModel, options: NotificationOptions): Promise<(User & IUser)[]> {
+async function getUsers(model: typeof KishiModel, row: KishiModel, options: NotificationOptions): Promise<(User & UserEntity)[]> {
 
 	let users: User[] = []
 	let usersToNotify = await options.notifyUsers(row)
@@ -50,11 +50,11 @@ async function getUsers(model: typeof KishiModel, row: KishiModel, options: Noti
 		attributes: ["id", "email"],
 		where: userWhere
 	})
-	return users as (User & IUser)[]
+	return users as (User & UserEntity)[]
 }
 export class NotificationService {
 
-	static async NotifyUser(user: IUser, notification: INotification, methods: notifyMethod[]) {
+	static async NotifyUser(user: UserEntity, notification: NotificationEntity, methods: notifyMethod[]) {
 		if (methods.includes("mail")) {
 			MailService.SendUserMessage(user, notification.message || "")
 		}
@@ -98,14 +98,14 @@ export class NotificationService {
 								ressourceName: model.name as any,
 								type: hookName == "afterCreate" ? "Create" : "Update",
 								users: KArray.get(users, "id"),
-							} as INotification
+							} as NotificationEntity
 							if (option.noCreate != false) {
 								notification = await Notification.Create(notificationData) as Notification
 							} else {
 								notification = notificationData as any
 							}
 							for (const user of users) {
-								await this.NotifyUser(user, notification as INotification, option.methods)
+								await this.NotifyUser(user, notification as NotificationEntity, option.methods)
 							}
 						} catch (error) {
 							logger.error(error)

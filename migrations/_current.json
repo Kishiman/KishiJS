@@ -1,0 +1,538 @@
+{
+    "tables": {
+        "ExternalToken": {
+            "tableName": "ExternalToken",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "UserType": {
+                    "allowNull": false,
+                    "field": "UserType",
+                    "seqType": "Sequelize.ENUM('Admin', 'Client')"
+                },
+                "token": {
+                    "allowNull": false,
+                    "field": "token",
+                    "seqType": "Sequelize.STRING(256)"
+                },
+                "ip": {
+                    "field": "ip",
+                    "seqType": "Sequelize.STRING(16)"
+                },
+                "expiresAt": {
+                    "field": "expiresAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "type": {
+                    "field": "type",
+                    "seqType": "Sequelize.ENUM('Google', 'LinkedIn')"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "userId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "User",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "userId",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
+            "indexes": {
+                "1a5d4c2d512c805251bc11888d62a8c41a65633e": {
+                    "name": "token",
+                    "unique": true,
+                    "fields": [
+                        "token"
+                    ],
+                    "options": {
+                        "indexName": "token",
+                        "name": "token",
+                        "indicesType": "UNIQUE",
+                        "type": "UNIQUE"
+                    }
+                }
+            }
+        },
+        "User": {
+            "tableName": "User",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "activated": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "allowNull": false,
+                    "fromView": false,
+                    "field": "activated",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "passwordChangedDate": {
+                    "fromView": false,
+                    "field": "passwordChangedDate",
+                    "seqType": "Sequelize.DATE"
+                },
+                "logoutDate": {
+                    "fromView": false,
+                    "field": "logoutDate",
+                    "seqType": "Sequelize.DATE"
+                },
+                "username": {
+                    "field": "username",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "email": {
+                    "allowNull": false,
+                    "unique": true,
+                    "update": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "phoneNumber": {
+                    "ts_typeStr": "string",
+                    "field": "phoneNumber",
+                    "seqType": "Sequelize.Phone"
+                },
+                "firstName": {
+                    "field": "firstName",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "lastName": {
+                    "field": "lastName",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "dateOfBirth": {
+                    "field": "dateOfBirth",
+                    "seqType": "Sequelize.DATEONLY"
+                },
+                "placeOfBirth": {
+                    "field": "placeOfBirth",
+                    "seqType": "Sequelize.STRING(128)"
+                },
+                "profilePhoto": {
+                    "ts_typeStr": "{ key: string, url: string }",
+                    "field": "profilePhoto",
+                    "seqType": "Sequelize.FileType"
+                },
+                "password": {
+                    "allowNull": false,
+                    "toView": false,
+                    "ts_typeStr": "string",
+                    "field": "password",
+                    "seqType": "Sequelize.HashedType"
+                },
+                "UserType": {
+                    "allowNull": true,
+                    "field": "UserType",
+                    "seqType": "Sequelize.ENUM('Admin', 'Client')"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "Admin": {
+            "tableName": "Admin",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "field": "id",
+                    "allowNull": false,
+                    "name": "id",
+                    "references": {
+                        "model": "User",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.UUID"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "Client": {
+            "tableName": "Client",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "field": "id",
+                    "allowNull": false,
+                    "name": "id",
+                    "references": {
+                        "model": "User",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.UUID"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "Notification": {
+            "tableName": "Notification",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "type": {
+                    "allowNull": false,
+                    "update": false,
+                    "defaultValue": {
+                        "value": "Custom"
+                    },
+                    "field": "type",
+                    "seqType": "Sequelize.ENUM('Custom', 'Create', 'Update')"
+                },
+                "message": {
+                    "update": false,
+                    "defaultValue": {
+                        "value": ""
+                    },
+                    "allowNull": false,
+                    "field": "message",
+                    "seqType": "Sequelize.STRING(200)"
+                },
+                "ressourceName": {
+                    "update": false,
+                    "defaultValue": {
+                        "value": ""
+                    },
+                    "field": "ressourceName",
+                    "seqType": "Sequelize.ENUM('')"
+                },
+                "ressourceId": {
+                    "update": false,
+                    "field": "ressourceId",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "triggeredBy": {
+                    "update": false,
+                    "field": "triggeredBy",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "Notification_User": {
+            "tableName": "Notification_User",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "seenDate": {
+                    "field": "seenDate",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "UserId": {
+                    "unique": "Notification_User",
+                    "references": {
+                        "model": "User",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "field": "UserId",
+                    "seqType": "Sequelize.UUID"
+                },
+                "NotificationId": {
+                    "unique": "Notification_User",
+                    "references": {
+                        "model": "Notification",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "field": "NotificationId",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": {
+                "31091d3ecb06e6247a3558b00b3684ae19dd308f": {
+                    "name": "Notification_User_unique",
+                    "unique": true,
+                    "fields": [
+                        "NotificationId",
+                        "UserId"
+                    ],
+                    "options": {
+                        "indexName": "Notification_User_unique",
+                        "name": "Notification_User_unique",
+                        "indicesType": "UNIQUE",
+                        "type": "UNIQUE"
+                    }
+                }
+            }
+        },
+        "Event": {
+            "tableName": "Event",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "title": {
+                    "allowNull": false,
+                    "field": "title",
+                    "seqType": "Sequelize.STRING"
+                },
+                "flag": {
+                    "field": "flag",
+                    "seqType": "Sequelize.ENUM('Custom')"
+                },
+                "startDate": {
+                    "field": "startDate",
+                    "seqType": "Sequelize.DATE"
+                },
+                "endDate": {
+                    "field": "endDate",
+                    "seqType": "Sequelize.DATE"
+                },
+                "allDay": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "allDay",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "description": {
+                    "field": "description",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "Event_User": {
+            "tableName": "Event_User",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "EventId": {
+                    "unique": "Event_User_UserId_EventId_unique",
+                    "references": {
+                        "model": "Event",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "field": "EventId",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "UserId": {
+                    "unique": "Event_User_UserId_EventId_unique",
+                    "references": {
+                        "model": "User",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "field": "UserId",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
+            "indexes": {
+                "f937b3f9319c5c8cd7e85c0d83a9a093bb7ec103": {
+                    "name": "Event_User_unique",
+                    "unique": true,
+                    "fields": [
+                        "UserId",
+                        "EventId"
+                    ],
+                    "options": {
+                        "indexName": "Event_User_unique",
+                        "name": "Event_User_unique",
+                        "indicesType": "UNIQUE",
+                        "type": "UNIQUE"
+                    }
+                }
+            }
+        },
+        "OpenAIResponseLog": {
+            "tableName": "OpenAIResponseLog",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.STRING(38)"
+                },
+                "user": {
+                    "field": "user",
+                    "seqType": "Sequelize.STRING"
+                },
+                "object": {
+                    "field": "object",
+                    "seqType": "Sequelize.STRING"
+                },
+                "created": {
+                    "field": "created",
+                    "seqType": "Sequelize.DATE"
+                },
+                "model": {
+                    "field": "model",
+                    "seqType": "Sequelize.STRING"
+                },
+                "prompt_tokens": {
+                    "field": "prompt_tokens",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "completion_tokens": {
+                    "field": "completion_tokens",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "total_tokens": {
+                    "field": "total_tokens",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "role": {
+                    "field": "role",
+                    "seqType": "Sequelize.STRING"
+                },
+                "systemPrompt": {
+                    "field": "systemPrompt",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "userPrompt": {
+                    "ts_typeStr": "string",
+                    "field": "userPrompt",
+                    "seqType": "Sequelize.FileText"
+                },
+                "content": {
+                    "field": "content",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "index": {
+                    "field": "index",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "finish_reason": {
+                    "field": "finish_reason",
+                    "seqType": "Sequelize.STRING"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        }
+    },
+    "revision": 2
+}

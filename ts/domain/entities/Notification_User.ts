@@ -1,5 +1,4 @@
-import { INotification } from "./INotification";
-export interface INotification_User {
+export interface Notification_UserEntity {
 	id?: number;
 	seenDate?: Date;
 	createdAt?: Date;

@@ -314,7 +314,7 @@ export class StripeService {
             logger.error(error)
           }
         }
-        return res.send({ msg: "ok" });
+        return res.send({ message: "ok" });
       } catch (error) {
         logger.error(error)
         return res.status(400).send({ error: (error as any).message || error });
