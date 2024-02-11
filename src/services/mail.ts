@@ -92,6 +92,7 @@ export class MailService {
 	}
 
 	static async SendUserCreated(user: UserEntity, link: string) {
+		return
 		await this.SendMailTemplate('./assets/mail/user_created_mail_fr.html', (user as any).email, { user, link }, {
 			subject: "Activez votre compte",
 		})
